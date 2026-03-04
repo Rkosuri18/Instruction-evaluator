@@ -12,13 +12,13 @@ This is a Django-based web application designed for researchers to annotate, eva
   * Verification Feedback & Recovery
 * **Document-Level Review:** Evaluates the guide as a whole for Resumability and Cross-step Reference Consistency.
 * **Automated Scoring:** Calculates aggregate step-level and document-level metrics based on the project's current weighting model.
-* **Pipeline-Ready JSON Export:** Includes a custom Django admin action that compiles the evaluations, calculates final scores, and exports a heavily formatted JSON file (with Chain of Thought reasoning) that plugs directly into the project's automated LLM pipeline.
+* **Pipeline-Ready JSON Export:** Includes a custom Django admin action that compiles the evaluations, calculates final scores, and exports a heavily formatted JSON file.
 
 ## How to Run This on Your Machine
 
 1. **Clone the repository:**
-   `git clone [YOUR_GITHUB_REPO_URL]`
-   `cd [YOUR_REPO_NAME]`
+   `git clone https://github.com/Rkosuri18/Instruction-evaluator`
+   `cd Instruction-evaluator`
 
 2. **Create and activate a virtual environment:**
    `python -m venv venv`
