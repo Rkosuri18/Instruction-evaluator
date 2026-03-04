@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Instruction Evaluator</title>
+    <link rel="stylesheet" href="{% static 'evaluator/style.css' %}?v=4">
+</head>
+<body>
+{% csrf_token %}
+
+<div id="customAlert" class="custom-alert"></div>
+
+<div class="top-navbar">
+    <div class="nav-buttons">
+        <a href="/" class="nav-btn">Home</a>
+        <a href="/admin" target="_blank" class="nav-btn">Admin Dashboard</a>
+        <button onclick="localStorage.removeItem('evaluatorState'); location.reload();" class="nav-btn">Clear Session</button>
+    </div>
+    <h1>Instruction Evaluation Portal</h1>
+</div>
+
+<div class="container">
+    
+    <div id="phase1">
+        <h2>Setup New Evaluation</h2>
+        
+        <div class="welcome-text">
+            <p>Welcome to the research evaluation portal. This tool helps us assess instructional guides for accessibility, clarity, and structural consistency across multiple dimensions.</p>
+            <p><strong>To begin:</strong> Select the instruction's domain, provide a descriptive title, and paste the raw instruction steps below. Please ensure each step is on its own separate line.</p>
+        </div>
+        
+        <div class="input-group">
+            <label for="instructionDomain">Domain:</label>
+            <select id="instructionDomain" class="setup-input">
+                <option value="">-- Select a Domain --</option>
+                <option value="cooking">Cooking</option>
+                <option value="assembly">Assembly</option>
+                <option value="learning">Learning to use the product</option>
+                <option value="software">Software tutorial</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="instructionTitle">Instruction Title:</label>
+            <input type="text" id="instructionTitle" class="setup-input" placeholder="e.g., How to build a chair">
+        </div>
+
+        <div class="input-group">
+            <label for="rawInstructions">Paste Instructions:</label>
+            <textarea id="rawInstructions" class="main-input" placeholder="Step 1: Do this...&#10;Step 2: Do that..."></textarea>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button onclick="startEvaluation()">Start New Evaluation</button>
+            <button id="resumeBtn" class="hidden" onclick="resumeEvaluation()">Resume Previous Session</button>
+        </div>
+    </div>
+
+    <div id="phase2" class="hidden">
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <h2 id="stepHeader">Step X</h2>
+        <div id="stepText" class="step-display"></div>
+
+        <div class="question-block">
+            <p>1. Goal/Outcome Clarity: How clearly does this step explain the starting condition, the action to take, and the expected outcome?</p>
+            <div class="rating-box">Value: 
+                <select id="dim1_rating" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 16px;">
+                    <option value="">Select</option>
+                    <option value="True">True</option>
+                    <option value="False">False</option>
+                </select>
+            </div>
+            <textarea id="dim1_reason" class="reason-box" placeholder="Reason for this value..."></textarea>
+        </div>
+
+        <div class="question-block">
+            <p>2. Atomic Actions: How focused is this step on a single task? (Score this based on the number of distinct physical actions required).</p>
+            <div class="rating-box">Value: <input type="number" step="any" id="dim2_value" class="value-box" placeholder="e.g. 2.587"></div>
+            <textarea id="dim2_reason" class="reason-box" placeholder="Reason for this value..."></textarea>
+        </div>
+
+        <div class="question-block">
+            <p>3. Sensory Conversion: How well does this step use non-visual cues (touch, sound, etc.) instead of relying on sight?</p>
+            <div class="rating-box">Value: <input type="number" step="any" id="dim3_value" class="value-box" placeholder="e.g. 4.0"></div>
+            <textarea id="dim3_reason" class="reason-box" placeholder="Reason for this value..."></textarea>
+        </div>
+
+        <div class="question-block">
+            <p>4. Parameter Boundedness: How completely are the necessary limits (amount, duration, count, etc.) specified?</p>
+            <div class="rating-box">Rating: <select id="dim4_rating"><option value="">Select</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+            <textarea id="dim4_reason" class="reason-box" placeholder="Reason for this rating..."></textarea>
+        </div>
+
+        <div class="question-block">
+            <p>5. Verification Feedback & Recovery: Does this step explicitly provide a clear condition to stop, a way to check for success, and a way to fix mistakes?</p>
+            <div class="rating-box" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                <span>Stop: 
+                    <select id="dim5_value1" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 16px;">
+                        <option value="">Select</option>
+                        <option value="True">True</option>
+                        <option value="False">False</option>
+                    </select>
+                </span>
+                <span>Check: 
+                    <select id="dim5_value2" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 16px;">
+                        <option value="">Select</option>
+                        <option value="True">True</option>
+                        <option value="False">False</option>
+                    </select>
+                </span>
+                <span>Fix: 
+                    <select id="dim5_value3" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 16px;">
+                        <option value="">Select</option>
+                        <option value="True">True</option>
+                        <option value="False">False</option>
+                    </select>
+                </span>
+            </div>
+            <textarea id="dim5_reason" class="reason-box" placeholder="Reason for these values..."></textarea>
+        </div>
+
+        <div class="button-group">
+            <button id="backToSetupBtn" class="secondary hidden" onclick="backToPhase1()">Back to Setup</button>
+            <button id="backBtn" class="secondary hidden" onclick="prevStep()">Back a Step</button>
+            <button onclick="nextStep()" style="margin-left: auto;">Save Step & Continue</button>
+        </div>
+    </div>
+
+    <div id="phase3" class="hidden">
+        <h2>Final Guide-Level Evaluation</h2>
+        <p class="welcome-text">Evaluate the instruction document as a whole based on your experience navigating the previous steps.</p>
+
+        <div class="question-block">
+            <p>1. Resumability: On a scale of 1-5, how easily can a user pause and resume the guide using explicit, non-visual checkpoints?</p>
+            <div class="rating-box">Rating: <select id="guide1_rating"><option value="">Select</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+            <textarea id="guide1_reason" class="reason-box" placeholder="Reason for this rating..."></textarea>
+        </div>
+
+        <div class="question-block">
+            <p>2. Cross-step Reference Consistency: Does the document use perfectly consistent naming for parts and tools without any ambiguous pronouns? (Select Pass if 100% consistent, Fail if there are any ambiguous or renamed items).</p>
+            <div class="rating-box">Result: 
+                <select id="guide2_rating" class="setup-input" style="width: 150px; display: inline-block; margin-left: 10px; padding: 8px;">
+                    <option value="">Select</option>
+                    <option value="Pass">Pass</option>
+                    <option value="Fail">Fail</option>
+                </select>
+            </div>
+            <textarea id="guide2_reason" class="reason-box" placeholder="Reason for this result..."></textarea>
+        </div>
+
+        <div class="button-group">
+            <button class="secondary" onclick="backToPhase2()">Back to Last Step</button>
+            <button class="success" onclick="submitData()">Submit Entire Evaluation</button>
+        </div>
+    </div>
+
+    <div id="phase4" class="hidden">
+        <div class="step-display" style="text-align: center; background: #e6f4ea; border-left: none; border-top: 5px solid #28a745; color: #137333;">
+            <h2> Evaluation Saved Successfully!</h2>
+            <p style="font-weight: normal; font-size: 16px; color: #333;">The instruction data has been saved to the database. Here are the calculated metrics:</p>
+        </div>
+
+        <div class="score-cards-container">
+            <div class="score-card">
+                <h3>Step-Level Score</h3>
+                <div class="score-value" id="resStepScore">0.0000</div>
+                <p class="score-label">Based on atomicity, sensory conversion, parameters, and feedback.</p>
+            </div>
+            <div class="score-card">
+                <h3>Doc-Level Score</h3>
+                <div class="score-value" id="resDocScore">0.0000</div>
+                <p class="score-label">Based on resumability and cross-step consistency.</p>
+            </div>
+            <div class="score-card highlight">
+                <h3>Final Overall Score</h3>
+                <div class="score-value" id="resFinalScore">0.0000</div>
+                <p class="score-label">Weighted aggregation (α=0.8).</p>
+            </div>
+        </div>
+
+        <div class="button-group" style="justify-content: center; margin-top: 40px; border-top: none;">
+            <button class="success" onclick="location.reload(); window.scrollTo(0, 0);" style="font-size: 18px; padding: 15px 40px;">Evaluate Another Document</button>
+        </div>
+    </div>
+
+</div>
+
+<script src="{% static 'evaluator/script.js' %}?v=4"></script>
+</body>
+</html>
