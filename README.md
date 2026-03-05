@@ -17,7 +17,7 @@ This is a Django-based web application designed for researchers to annotate, eva
 ## How to Run This on Your Machine
 
 1. **Clone the repository:**
-   `git clone https://github.com/Rkosuri18/Instruction-evaluator`
+   `git clone https://github.com/Rkosuri18/Instruction-evaluator.git`
    `cd Instruction-evaluator`
 
 2. **Create and activate a virtual environment:**
@@ -31,8 +31,13 @@ This is a Django-based web application designed for researchers to annotate, eva
 4. **Set up the database:**
    `python manage.py migrate`
 
-5. **Run the local server:**
+5. **Create a superuser (Admin account):**
+   `python manage.py createsuperuser`
+   *(Follow the prompts to create an account so you can access the JSON exports)*
+
+6. **Run the local server:**
    `python manage.py runserver`
 
-6. **Open your browser:**
-   Go to `http://127.0.0.1:8000`
+7. **Open your browser:**
+   * To evaluate instructions: Go to `http://127.0.0.1:8000`
+   * To export JSON data: Go to `http://127.0.0.1:8000/admin` and log in.
