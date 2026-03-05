@@ -33,7 +33,7 @@ This is a Django-based web application designed for researchers to annotate, eva
 
 5. **Create a superuser (Admin account):**
    `python manage.py createsuperuser`
-   *(Follow the prompts to create an account so you can access the JSON exports)*
+
 
 6. **Run the local server:**
    `python manage.py runserver`
