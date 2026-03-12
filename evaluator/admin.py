@@ -54,7 +54,8 @@ def export_pipeline_format(modeladmin, request, queryset):
     data = eval_obj.evaluation_data
     
     doc_id = eval_obj.document_title.replace(" ", "_").lower()
-    domain = eval_obj.domain
+    # Force lowercase so it perfectly matches the DOMAIN_CONFIG keys
+    domain = eval_obj.domain.lower() 
     
     steps_list = []
     steps_data = data.get('steps', {})
@@ -227,7 +228,8 @@ def export_pipeline_format(modeladmin, request, queryset):
     
     final_text = f'solver_input = """ \n{input_json_str}\n\n"""\n\nsolver_output = """\n{output_json_str} \n"""\n'
 
-    response = HttpResponse(final_text, content_type="text/plain; charset=utf-8")
+    # The foolproof headers to guarantee a .json file download
+    response = HttpResponse(final_text, content_type="application/json")
     response['Content-Disposition'] = f'attachment; filename="{doc_id}.json"'
     return response
 
