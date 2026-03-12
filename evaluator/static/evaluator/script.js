@@ -8,41 +8,40 @@ const dimensionNames = ["Goal/Outcome Clarity", "Atomic Actions", "Sensory Conve
 const domainConfig = {
     "cooking": {
         lambda: 0.5,
-        ranks: ["parameter", "atomic", "verification", "sensory", "goal", "resumability", "consistency"]
+        ranks: ["parameter", "sensory", "verification", "atomic", "goal"]
     },
     "assembly": {
         lambda: 0.5,
-        ranks: ["sensory", "verification", "parameter", "goal", "atomic", "consistency", "resumability"]
+        ranks: ["sensory", "parameter", "verification", "atomic", "goal"]
     },
     "learning": { 
         lambda: 0.5,
-        ranks: ["goal", "sensory", "verification", "atomic", "parameter", "resumability", "consistency"]
+        ranks: ["parameter", "sensory", "atomic", "verification", "goal"]
     },
     "software": { 
         lambda: 0.5,
-        ranks: ["consistency", "goal", "parameter", "resumability", "verification", "atomic", "sensory"]
+        ranks: ["parameter", "sensory", "verification", "atomic", "goal"]
     },
     "other": {
         lambda: 0.5,
-        ranks: ["goal", "atomic", "sensory", "parameter", "verification", "resumability", "consistency"]
+        ranks: ["parameter", "sensory", "verification", "atomic", "goal"]
     }
 };
-
 
 function calculateGeometricWeights(domain) {
     let config = domainConfig[domain] || domainConfig["other"];
     let lambda = config.lambda;
-    let ranks = config.ranks;
+    let stepRanks = config.ranks;
 
     let denominator = 0;
-    for (let j = 1; j <= 7; j++) {
-        denominator += Math.pow(lambda, j - 1); 
+    for (let j = 1; j <= stepRanks.length; j++) {
+        denominator += Math.exp(-lambda * (j - 1)); 
     }
 
     let weights = {};
-    ranks.forEach((dimName, index) => {
+    stepRanks.forEach((dimName, index) => {
         let r = index + 1; 
-        let numerator = Math.pow(lambda, r - 1);
+        let numerator = Math.exp(-lambda * (r - 1));
         weights[dimName] = numerator / denominator; 
     });
 
@@ -126,7 +125,6 @@ function renderStep() {
     let savedData = finalPayload.steps[stepKey];
 
     if (savedData) {
-        
         document.getElementById('dim1_rating').value = savedData.goal_clarity.value !== undefined ? savedData.goal_clarity.value : '';
         document.getElementById('dim1_reason').value = savedData.goal_clarity.reason || '';
         
@@ -171,7 +169,6 @@ function backToPhase2() {
 }
 
 function nextStep() {
-    
     const singleInputs = [
         { valId: 'dim1_rating', resId: 'dim1_reason', name: dimensionNames[0], isRating: false },
         { valId: 'dim2_value', resId: 'dim2_reason', name: dimensionNames[1], isRating: false },
@@ -201,7 +198,6 @@ function nextStep() {
         showCustomAlert("You missed the reason for: Verification Feedback & Recovery", true); return;
     }
 
-    
     finalPayload.steps["step_" + (currentStepIndex + 1)] = {
         text: steps[currentStepIndex],
         goal_clarity: { value: document.getElementById('dim1_rating').value, reason: document.getElementById('dim1_reason').value },
@@ -237,27 +233,21 @@ function submitData() {
         consistency: { rating: guide2Rating, reason: document.getElementById('guide2_reason').value }
     };
 
-    
     let paramsSum = 0, actSum = 0, selectSum = 0, fbSum = 0, goalSum = 0;
     let numSteps = Object.keys(finalPayload.steps).length;
 
     for (const key in finalPayload.steps) {
         let step = finalPayload.steps[key];
         
-        
         let gVal = (step.goal_clarity.value === "True") ? 1.0 : 0.0;
         goalSum += gVal;
 
-        
         actSum += parseFloat(step.atomic_actions.value) || 0;
 
-        
         selectSum += parseFloat(step.sensory_conversion.value) || 0;
 
-        
         let pRating = parseFloat(step.parameter_boundedness.rating) || 1;
         paramsSum += (pRating - 1) / 4.0;
-        
         
         let fbVal = 0;
         if (step.verification.values[0] === "True") fbVal += 1;
@@ -266,7 +256,6 @@ function submitData() {
         fbSum += (fbVal / 3.0);
     }
 
-    
     let scores = {
         "goal": goalSum / numSteps,
         "atomic": actSum / numSteps,
@@ -277,25 +266,22 @@ function submitData() {
         "consistency": (guide2Rating === "Pass") ? 1.0 : 0.0
     };
 
-   
     let weights = calculateGeometricWeights(documentDomain);
 
-    
     let sStep = (weights["goal"] * scores["goal"]) + 
                 (weights["atomic"] * scores["atomic"]) + 
                 (weights["sensory"] * scores["sensory"]) + 
                 (weights["parameter"] * scores["parameter"]) + 
                 (weights["verification"] * scores["verification"]);
 
-    let sDoc = (weights["resumability"] * scores["resumability"]) + 
-               (weights["consistency"] * scores["consistency"]);
+    let sDoc = (0.5 * scores["resumability"]) + 
+               (0.5 * scores["consistency"]);
 
-    let finalScore = sStep + sDoc; 
+    const finalScore = (sStep * 0.8) + (sDoc * 0.2); 
 
     document.getElementById('resStepScore').innerText = sStep.toFixed(4);
     document.getElementById('resDocScore').innerText = sDoc.toFixed(4);
     document.getElementById('resFinalScore').innerText = finalScore.toFixed(4);
-   
 
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     

@@ -3,29 +3,30 @@ from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 import json
 import re
+import math
 from .models import EvaluationResult
 
 
 DOMAIN_CONFIG = {
     "cooking": {
         "lambda": 0.5,
-        "ranks": ["parameter", "atomic", "verification", "sensory", "goal", "resumability", "consistency"]
+        "ranks": ["parameter", "sensory", "verification", "atomic", "goal"]
     },
     "assembly": {
         "lambda": 0.5,
-        "ranks": ["sensory", "verification", "parameter", "goal", "atomic", "consistency", "resumability"]
+        "ranks": ["sensory", "parameter", "verification", "atomic", "goal"]
     },
     "learning": {
         "lambda": 0.5,
-        "ranks": ["goal", "sensory", "verification", "atomic", "parameter", "resumability", "consistency"]
+        "ranks": ["parameter", "sensory", "atomic", "verification", "goal"]
     },
     "software": {
         "lambda": 0.5,
-        "ranks": ["consistency", "goal", "parameter", "resumability", "verification", "atomic", "sensory"]
+        "ranks": ["parameter", "sensory", "verification", "atomic", "goal"]
     },
     "other": {
         "lambda": 0.5,
-        "ranks": ["goal", "atomic", "sensory", "parameter", "verification", "resumability", "consistency"]
+        "ranks": ["parameter", "sensory", "verification", "atomic", "goal"]
     }
 }
 
@@ -35,12 +36,12 @@ def get_geometric_weights(domain_name):
     lam = config["lambda"]
     ranks = config["ranks"]
     
-    
-    denominator = sum([lam**j for j in range(7)])
+    # Calculate denominator using math.exp
+    denominator = sum([math.exp(-lam * j) for j in range(len(ranks))])
     
     weights = {}
     for idx, dim in enumerate(ranks):
-        weights[dim] = (lam**idx) / denominator
+        weights[dim] = math.exp(-lam * idx) / denominator
     return weights
 
 
@@ -68,7 +69,6 @@ def export_pipeline_format(modeladmin, request, queryset):
         "steps": steps_list
     }
     
-    
     goal_sum = 0
     params_sum = 0
     act_sum = 0
@@ -93,7 +93,6 @@ def export_pipeline_format(modeladmin, request, queryset):
         val_sensory = str(sensory.get('value', '0'))
         val_params = str(params.get('rating', '1'))
 
-        
         if val_goal == 'True':
             goal_sum += 1.0
         act_sum += float(val_act)
@@ -131,14 +130,12 @@ def export_pipeline_format(modeladmin, request, queryset):
             }
         }
 
-    
     mean_goal = goal_sum / num_steps if num_steps else 0
     mean_params = params_sum / num_steps if num_steps else 0
     mean_fb = fb_sum / num_steps if num_steps else 0
     mean_act = act_sum / num_steps if num_steps else 0
     mean_select = select_sum / num_steps if num_steps else 0
 
-    
     guide_data = data.get('guide_level', {})
     resumability = guide_data.get('resumability', {})
     consistency = guide_data.get('consistency', {})
@@ -147,19 +144,20 @@ def export_pipeline_format(modeladmin, request, queryset):
     s_resume = (res_raw - 1) / 4.0
     s_ref = 1.0 if consistency.get('rating', '') == 'Pass' else 0.0
 
-    
     weights = get_geometric_weights(domain)
     
-    s_step = (weights["goal"] * mean_goal) + \
-             (weights["parameter"] * mean_params) + \
-             (weights["verification"] * mean_fb) + \
-             (weights["atomic"] * mean_act) + \
-             (weights["sensory"] * (1.0 - mean_select))
+    # Apply weights using the exact 5-dimension rankings
+    s_step = (weights.get("goal", 0) * mean_goal) + \
+             (weights.get("parameter", 0) * mean_params) + \
+             (weights.get("verification", 0) * mean_fb) + \
+             (weights.get("atomic", 0) * mean_act) + \
+             (weights.get("sensory", 0) * (1.0 - mean_select))
 
-    s_doc = (weights["resumability"] * s_resume) + \
-            (weights["consistency"] * s_ref)
+    # Explicitly enforce 50/50 doc split
+    s_doc = (0.5 * s_resume) + (0.5 * s_ref)
 
-    final_score = s_step + s_doc
+    # Calculate final score with 80/20 split
+    final_score = (s_step * 0.8) + (s_doc * 0.2)
 
     doc_level_score = {
         "resumability": {
@@ -172,20 +170,17 @@ def export_pipeline_format(modeladmin, request, queryset):
         }
     }
 
-    
-    
+    # Document-level Chain of Thought update
     cot_doc = (
-        "Document-level aggregation pipeline.\\n\\n"
+        "Document-level aggregation pipeline.\n\n"
         f"A) Normalize doc metrics to [0,1]: resumability (1–5) with value={int(res_raw)} → S_resume=({int(res_raw)}-1)/(5-1)={s_resume:.1f}. "
-        f"reference_consistency Pass/Fail with Pass→S_ref={s_ref:.1f}.\\n\\n"
-        "B) Importance ranking (most→least): reference_consistency=r1, resumability=r2.\\n\\n"
-        "C) Weight decay with λ=0.5: unnormalized [1.0, 0.6065]. Normalize (sum=1.6065) → [0.6225, 0.3775].\\n\\n"
-        f"D) Weighted sum: S_doc = 0.6225*{s_ref:.1f} + 0.3775*{s_resume:.1f} = {s_doc:.4f}."
+        f"reference_consistency Pass/Fail with Pass→S_ref={s_ref:.1f}.\n\n"
+        "B) Equal weights applied (no geometric decay): w_ref=0.5, w_resume=0.5.\n\n"
+        f"C) Weighted sum: S_doc = 0.5*{s_ref:.1f} + 0.5*{s_resume:.1f} = {s_doc:.4f}."
     )
 
-    
     cot_final = (
-        "Final score mixing step-level and document-level aggregates.\\n\\n"
+        "Final score mixing step-level and document-level aggregates.\n\n"
         f"Let S_step={s_step:.4f} and S_doc={s_doc:.4f}. Use α=0.8 so step-level dominates (execution-critical). "
         f"Overall = α*S_step + (1-α)*S_doc = 0.8*{s_step:.4f} + 0.2*{s_doc:.4f} = {final_score:.4f}."
     )
