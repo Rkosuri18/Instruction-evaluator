@@ -68,7 +68,7 @@
         <div id="stepText" class="step-display"></div>
 
         <div class="question-block">
-            <p>1. Goal/Outcome Clarity: How clearly does this step explain the starting condition, the action to take, and the expected outcome?</p>
+            <p>1. Goal/Outcome Clarity: Does this step explicitly state a high-level goal summary of what the user is expected to accomplish (i.e., what they are trying to do)?</p>
             <div class="rating-box">Value: 
                 <select id="dim1_rating" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 16px;">
                     <option value="">Select</option>
@@ -80,25 +80,25 @@
         </div>
 
         <div class="question-block">
-            <p>2. Atomic Actions: How focused is this step on a single task? (Score this based on the number of distinct physical actions required).</p>
+            <p>2. Atomic Actions: How focused is this step on a single task? (Count the number of distinct physical actions, N, and enter the value as 1/N)?</p>
             <div class="rating-box">Value: <input type="number" step="any" id="dim2_value" class="value-box" placeholder="e.g. 2.587"></div>
             <textarea id="dim2_reason" class="reason-box" placeholder="Reason for this value..."></textarea>
         </div>
 
         <div class="question-block">
-            <p>3. Sensory Conversion: How well does this step use non-visual cues (touch, sound, etc.) instead of relying on sight?</p>
+            <p>3. Sensory Conversion: Out of all the sensory checks in this step (e.g., 'golden brown', 'until smooth', 'when it clicks'), what fraction of them force the user to use their eyesight?</p>
             <div class="rating-box">Value: <input type="number" step="any" id="dim3_value" class="value-box" placeholder="e.g. 4.0"></div>
             <textarea id="dim3_reason" class="reason-box" placeholder="Reason for this value..."></textarea>
         </div>
 
         <div class="question-block">
-            <p>4. Parameter Boundedness: How completely are the necessary limits (amount, duration, count, etc.) specified?</p>
+            <p>4. Parameter Boundedness: How completely does this step specify the execution-critical limits (amount, duration, count, etc.) using only the text in that step, without guessing?</p>
             <div class="rating-box">Rating: <select id="dim4_rating"><option value="">Select</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
             <textarea id="dim4_reason" class="reason-box" placeholder="Reason for this rating..."></textarea>
         </div>
 
         <div class="question-block">
-            <p>5. Verification Feedback & Recovery: Does this step explicitly provide a clear condition to stop, a way to check for success, and a way to fix mistakes?</p>
+            <p>5. Verification Feedback & Recovery: Does this step explicitly provide an accessible (non-visual) condition to stop, a non-visual way to check for success, and a way to fix mistakes?</p>
             <div class="rating-box" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                 <span>Stop: 
                     <select id="dim5_value1" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 16px;">
@@ -137,13 +137,13 @@
         <p class="welcome-text">Evaluate the instruction document as a whole based on your experience navigating the previous steps.</p>
 
         <div class="question-block">
-            <p>1. Resumability: On a scale of 1-5, how easily can a user pause and resume the guide using explicit, non-visual checkpoints?</p>
+            <p>1. Resumability: How easy is it for a blind user to pause mid-way and resume at the correct point without re-reading the entire guide?</p>
             <div class="rating-box">Rating: <select id="guide1_rating"><option value="">Select</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
             <textarea id="guide1_reason" class="reason-box" placeholder="Reason for this rating..."></textarea>
         </div>
 
         <div class="question-block">
-            <p>2. Cross-step Reference Consistency: Does the document use perfectly consistent naming for parts and tools without any ambiguous pronouns? (Select Pass if 100% consistent, Fail if there are any ambiguous or renamed items).</p>
+            <p>2. Cross-step Reference Consistency: Are all cross-step references (like "it", "this", or previously mentioned parts/ingredients) unambiguous and consistently named throughout the entire guide?(Select Pass if 100% consistent, Fail if there are any ambiguous or renamed items).</p>
             <div class="rating-box">Result: 
                 <select id="guide2_rating" class="setup-input" style="width: 150px; display: inline-block; margin-left: 10px; padding: 8px;">
                     <option value="">Select</option>
