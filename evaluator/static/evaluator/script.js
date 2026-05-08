@@ -1,3 +1,18 @@
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 let steps = [];
 let currentStepIndex = 0;
 let documentTitle = "";
@@ -283,7 +298,8 @@ function submitData() {
     document.getElementById('resDocScore').innerText = sDoc.toFixed(4);
     document.getElementById('resFinalScore').innerText = finalScore.toFixed(4);
 
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    // CHANGED: Grab the token from the browser cookie instead of the HTML tag
+    const csrfToken = getCookie('csrftoken');
     
     let submitBtn = event.target;
     let originalText = submitBtn.innerText;
